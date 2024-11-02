@@ -1,0 +1,125 @@
+{% extends 'core/base.html' %}
+{% load static %}
+
+{% block content %}
+<h2>Detalles de la Solicitud</h2>
+
+<!-- Botones para descargar en Excel, PDF y Volver a la lista -->
+<div class="d-flex justify-content-between mb-4">
+    <div>
+        <button id="exportExcel" class="btn btn-success">Descargar Excel</button>
+        <button id="exportPdf" class="btn btn-danger">Descargar PDF</button>
+    </div>
+    <a href="{% url 'admin_solicitudes' %}" class="btn btn-secondary">Volver a la lista de solicitudes</a>
+</div>
+
+<!-- Información de la solicitud -->
+<div class="card mb-4">
+    <div class="card-body">
+        <h3 class="card-title">Información de la Solicitud</h3>
+        <p><strong>ID:</strong> {{ solicitud.id }}</p>
+        <p><strong>Nombre:</strong> {{ solicitud.nombre }} {{ solicitud.apellido }}</p>
+        <p><strong>Email:</strong> {{ solicitud.email }}</p>
+        <p><strong>Teléfono:</strong> {{ solicitud.telefono }}</p>
+        <p><strong>Fecha de Inicio:</strong> {{ solicitud.fecha_inicio }}</p>
+        <p><strong>Fecha de Fin:</strong> {{ solicitud.fecha_fin }}</p>
+        <p><strong>Estado:</strong> {{ solicitud.get_estado_display }}</p>
+        <!-- Mostrar el precio total después de la información de la solicitud -->
+        <p><strong>Precio total de los artículos:</strong> ${{ total_precio }}</p>
+    </div>
+</div>
+
+<!-- Artículos solicitados -->
+<h3>Artículos Solicitados</h3>
+
+<div class="row">
+    {% for articulo_solicitud in articulos_solicitud %}
+    <div class="col-md-4 mb-3">
+        <div class="card" style="font-size: 0.9rem;">
+            {% if articulo_solicitud.articulo.imagen %}
+                <img src="{{ articulo_solicitud.articulo.imagen.url }}" class="card-img-top" alt="{{ articulo_solicitud.articulo.nombre }}" style="height: 100px; object-fit: cover;">
+            {% else %}
+                <img src="{% static 'core/img/no-image.png' %}" class="card-img-top" alt="No image" style="height: 100px; object-fit: cover;">
+            {% endif %}
+            <div class="card-body">
+                <h5 class="card-title">{{ articulo_solicitud.articulo.nombre }}</h5>
+                <p class="card-text">ID: {{ articulo_solicitud.articulo.id }}</p>
+                <p class="card-text">Cantidad: {{ articulo_solicitud.cantidad }}</p>
+                <p class="card-text">Precio: ${{ articulo_solicitud.articulo.precio }}</p>
+            </div>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+
+<!-- Agregar los scripts de SheetJS y jsPDF -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Función para exportar a Excel
+        document.getElementById('exportExcel').addEventListener('click', function() {
+            var wb = XLSX.utils.book_new();
+    
+            // Datos de la solicitud
+            var wsData = [
+                ['Detalles de la Solicitud'],
+                ['ID', '{{ solicitud.id }}'],
+                ['Nombre', '{{ solicitud.nombre }} {{ solicitud.apellido }}'],
+                ['Email', '{{ solicitud.email }}'],
+                ['Teléfono', '{{ solicitud.telefono }}'],
+                ['Fecha de Inicio', '{{ solicitud.fecha_inicio }}'],
+                ['Fecha de Fin', '{{ solicitud.fecha_fin }}'],
+                ['Estado', '{{ solicitud.get_estado_display }}'],
+                [],
+                ['Precio Total de los Artículos', '${{ total_precio }}'], // Mostrar el precio total antes de los artículos
+                [],
+                ['Artículos Solicitados'],
+                ['ID', 'Nombre', 'Cantidad', 'Precio'], // Encabezados
+                {% for articulo_solicitud in articulos_solicitud %}
+                    ['{{ articulo_solicitud.articulo.id }}', '{{ articulo_solicitud.articulo.nombre }}', '{{ articulo_solicitud.cantidad }}', '{{ articulo_solicitud.articulo.precio }}'],
+                {% endfor %}
+            ];
+    
+            var ws = XLSX.utils.aoa_to_sheet(wsData);
+            XLSX.utils.book_append_sheet(wb, ws, "Detalles Solicitud");
+            XLSX.writeFile(wb, 'solicitud_{{ solicitud.id }}.xlsx');
+        });
+    
+        // Función para exportar a PDF
+        document.getElementById('exportPdf').addEventListener('click', function() {
+            var { jsPDF } = window.jspdf;
+            var doc = new jsPDF();
+            doc.setFontSize(12);
+    
+            // Detalles de la solicitud
+            doc.text("Detalles de la Solicitud", 10, 10);
+            doc.text("ID: {{ solicitud.id }}", 10, 20);
+            doc.text("Nombre: {{ solicitud.nombre }} {{ solicitud.apellido }}", 10, 30);
+            doc.text("Email: {{ solicitud.email }}", 10, 40);
+            doc.text("Teléfono: {{ solicitud.telefono }}", 10, 50);
+            doc.text("Fecha de Inicio: {{ solicitud.fecha_inicio }}", 10, 60);
+            doc.text("Fecha de Fin: {{ solicitud.fecha_fin }}", 10, 70);
+            doc.text("Estado: {{ solicitud.get_estado_display }}", 10, 80);
+    
+            // Precio total de los artículos
+            doc.text("Precio Total de los Artículos: ${{ total_precio }}", 10, 90); // Precio total antes de los artículos solicitados
+    
+            // Artículos solicitados
+            doc.text("Artículos Solicitados:", 10, 100);
+    
+            let y = 110; // Posición Y inicial
+            {% for articulo_solicitud in articulos_solicitud %}
+                var articuloTexto = "ID: {{ articulo_solicitud.articulo.id }} | Nombre: {{ articulo_solicitud.articulo.nombre }} | Cantidad: {{ articulo_solicitud.cantidad }} | Precio: ${{ articulo_solicitud.articulo.precio }}";
+                doc.text(articuloTexto, 10, y);
+                y += 10; // Incrementamos la posición Y para el siguiente artículo
+            {% endfor %}
+    
+            doc.save('solicitud_{{ solicitud.id }}.pdf');
+        });
+    });
+    
+</script>
+
+{% endblock %}

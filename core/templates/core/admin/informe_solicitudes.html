@@ -1,0 +1,47 @@
+{% extends 'core/base.html' %}
+
+{% block content %}
+<h1 style="background-color: rgb(253, 253, 253); border-radius: 15px;">Informe de Solicitudes</h1>
+
+<!-- Total de Solicitudes -->
+<div class="card mb-3">
+    <div class="card-body">
+        <h5 class="card-title">Total de Solicitudes</h5>
+        <p class="card-text">{{ total_solicitudes }}</p>
+    </div>
+</div>
+
+<!-- Solicitudes por Estado -->
+<div class="card mb-3">
+    <div class="card-body">
+        <h5 class="card-title">Solicitudes por Estado</h5>
+        <ul>
+            {% if solicitudes_por_estado %}
+                {% for estado in solicitudes_por_estado %}
+                <li>{{ estado.estado }}: {{ estado.total }}</li>
+                {% endfor %}
+            {% else %}
+                <li>No hay solicitudes en los estados disponibles</li>
+            {% endif %}
+        </ul>
+    </div>
+</div>
+
+<!-- Solicitudes Próximas a Iniciar -->
+<div class="card mb-3">
+    <div class="card-body">
+        <h5 class="card-title">Solicitudes Próximas a Iniciar (7 días)</h5>
+        <p class="card-text">
+            {% if proximas_a_iniciar > 0 %}
+                {{ proximas_a_iniciar }}
+            {% else %}
+                No hay solicitudes próximas a iniciar en los próximos 7 días.
+            {% endif %}
+        </p>
+    </div>
+</div>
+
+<!-- Botón para regresar -->
+<a href="{% url 'admin_solicitudes' %}" class="btn btn-primary">Volver a Solicitudes</a>
+
+{% endblock %}

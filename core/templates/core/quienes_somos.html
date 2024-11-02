@@ -1,0 +1,24 @@
+{% extends 'core/base.html' %}
+{% load static %}  <!-- Añade esta línea al principio del archivo -->
+
+{% block title %}Quienes Somos - Evento Solicitud{% endblock %}
+
+{% block content %}
+<h1 class="mb-4" style="background-color:rgb(255, 255, 255); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); color: rgb(0, 0, 0); border-radius: 15px;">Quienes Somos</h1>
+<div class="row" style="background-color:rgb(255, 255, 255); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); color: rgb(0, 0, 0); border-radius: 15px;">
+    <div class="col-md-8">
+        <p>Evento Solicitud es una empresa líder en el alquiler de artículos para eventos. Fundada en 2010, nos hemos dedicado a hacer realidad los sueños de nuestros clientes, proporcionando todo lo necesario para crear eventos inolvidables.</p>
+        <p>Nuestra misión es ofrecer productos de alta calidad y un servicio excepcional, asegurando que cada evento sea único y especial.</p>
+        <h3>Nuestros Valores</h3>
+        <ul>
+            <li>Calidad en cada detalle</li>
+            <li>Compromiso con la satisfacción del cliente</li>
+            <li>Innovación constante</li>
+            <li>Responsabilidad social y ambiental</li>
+        </ul>
+    </div>
+    <div class="col-md-4">
+        <img src="{% static 'core/img/team.jpg' %}" alt="Nuestro Equipo" class="img-fluid rounded">
+    </div>
+</div>
+{% endblock %}

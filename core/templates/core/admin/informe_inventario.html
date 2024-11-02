@@ -1,0 +1,150 @@
+{% extends 'core/base.html' %}
+{% load static %}
+
+{% block content %}
+
+<h2 style="background-color: rgb(253, 253, 253); border-radius: 15px;">Informe de Inventario</h2>
+
+<!-- Contenedor para los botones Excel, PDF y Volver -->
+<div class="d-flex justify-content-between mb-4">
+    <div>
+        <button id="exportExcel" class="btn btn-success">Descargar Excel</button>
+        <button id="exportPdf" class="btn btn-danger">Descargar PDF</button>
+    </div>
+    <div>
+        <a href="{% url 'admin_inventario' %}" class="btn btn-secondary">Volver al Inventario</a>
+    </div>
+</div>
+
+<!-- Tarjeta para Totales de Artículos -->
+<div class="card mb-4">
+    <div class="card-body">
+        <h5 class="card-title">Totales de Artículos</h5>
+        <ul class="list-group">
+            <li class="list-group-item d-flex justify-content-between align-items-center">
+                Total de Artículos
+                <span class="badge bg-primary rounded-pill">{{ total_articulos }}</span>
+            </li>
+            <li class="list-group-item d-flex justify-content-between align-items-center">
+                Total de Artículos Alquilados
+                <span class="badge bg-warning rounded-pill">{{ total_alquilados }} ({{ porcentaje_alquilados|floatformat:2 }}%)</span>
+            </li>
+            <li class="list-group-item d-flex justify-content-between align-items-center">
+                Total de Artículos Disponibles
+                <span class="badge bg-success rounded-pill">{{ total_disponibles }} ({{ porcentaje_disponibles|floatformat:2 }}%)</span>
+            </li>
+        </ul>
+    </div>
+</div>
+
+<!-- Campo de búsqueda para filtrar la tabla de categorías -->
+<div class="mb-4">
+    <input type="text" id="buscarCategoria" class="form-control" placeholder="Filtrar categorías">
+</div>
+
+<!-- Tabla para Categorías con Filtro -->
+<div class="card mb-4">
+    <div class="card-body">
+        <h5 class="card-title">Artículos por Categoría</h5>
+        <table class="table table-striped">
+            <thead>
+                <tr>
+                    <th>Categoría</th>
+                    <th>Total de Artículos</th>
+                    <th>% del Inventario</th> <!-- Porcentaje total -->
+                    <th>Artículos Alquilados</th>
+                    <th>% Alquilados</th> <!-- Porcentaje de alquilados -->
+                    <th>Artículos Disponibles</th>
+                    <th>% Disponibles</th> <!-- Porcentaje de disponibles -->
+                </tr>
+            </thead>
+            <tbody id="tablaCategorias">
+                {% for categoria in categorias %}
+                <tr class="categoria-fila">
+                    <td>{{ categoria.nombre }}</td>
+                    <td>{{ categoria.total_articulos|default_if_none:"0" }}</td>
+                    <td>{{ categoria.porcentaje_total|floatformat:2 }}%</td>
+                    <td>{{ categoria.total_alquilados|default_if_none:"0" }}</td>
+                    <td>{{ categoria.porcentaje_alquilados|floatformat:2 }}%</td>
+                    <td>{{ categoria.total_disponibles|default_if_none:"0" }}</td>
+                    <td>{{ categoria.porcentaje_disponibles|floatformat:2 }}%</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<!-- Librerías para Excel y PDF -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.18/jspdf.plugin.autotable.min.js"></script>
+
+<script>
+    // Filtrar la tabla de categorías por nombre
+    document.getElementById('buscarCategoria').addEventListener('input', function() {
+        var filtro = this.value.toLowerCase();
+        var filas = document.querySelectorAll('.categoria-fila');
+
+        filas.forEach(function(fila) {
+            var nombreCategoria = fila.querySelector('td').textContent.toLowerCase();
+            if (nombreCategoria.includes(filtro)) {
+                fila.style.display = '';  // Mostrar la fila
+            } else {
+                fila.style.display = 'none';  // Ocultar la fila
+            }
+        });
+    });
+
+    // Función para exportar a Excel
+    document.getElementById('exportExcel').addEventListener('click', function() {
+        var wb = XLSX.utils.book_new();
+
+        // Datos globales
+        var wsData = [
+            ['Totales de Artículos'],
+            ['Total de Artículos', '{{ total_articulos }}'],
+            ['Total de Artículos Alquilados', '{{ total_alquilados }}'],
+            ['Total de Artículos Disponibles', '{{ total_disponibles }}'],
+            [],
+            ['Categoría', 'Total de Artículos', '% del Inventario', 'Artículos Alquilados', '% Alquilados', 'Artículos Disponibles', '% Disponibles'],  // Encabezados de la nueva tabla
+            {% for categoria in categorias %}
+            ['{{ categoria.nombre }}', '{{ categoria.total_articulos }}', '{{ categoria.porcentaje_total|floatformat:2 }}%', '{{ categoria.total_alquilados }}', '{{ categoria.porcentaje_alquilados|floatformat:2 }}%', '{{ categoria.total_disponibles }}', '{{ categoria.porcentaje_disponibles|floatformat:2 }}%'],
+            {% endfor %}
+        ];
+
+        var ws = XLSX.utils.aoa_to_sheet(wsData);
+        XLSX.utils.book_append_sheet(wb, ws, "Informe Inventario");
+        XLSX.writeFile(wb, 'informe_inventario.xlsx');
+    });
+
+    // Función para exportar a PDF con formato de tabla
+    document.getElementById('exportPdf').addEventListener('click', function() {
+        var { jsPDF } = window.jspdf;
+        var doc = new jsPDF();
+
+        doc.setFontSize(12);
+        doc.text("Totales de Artículos", 10, 10);
+        doc.text("Total de Artículos: {{ total_articulos }}", 10, 20);
+        doc.text("Total de Artículos Alquilados: {{ total_alquilados }}", 10, 30);
+        doc.text("Total de Artículos Disponibles: {{ total_disponibles }}", 10, 40);
+
+        // Agregar la tabla de categorías
+        var columnas = ["Categoría", "Total de Artículos", "% del Inventario", "Artículos Alquilados", "% Alquilados", "Artículos Disponibles", "% Disponibles"];
+        var filas = [
+            {% for categoria in categorias %}
+            ["{{ categoria.nombre }}", "{{ categoria.total_articulos }}", "{{ categoria.porcentaje_total|floatformat:2 }}%", "{{ categoria.total_alquilados }}", "{{ categoria.porcentaje_alquilados|floatformat:2 }}%", "{{ categoria.total_disponibles }}", "{{ categoria.porcentaje_disponibles|floatformat:2 }}%"],
+            {% endfor %}
+        ];
+
+        doc.autoTable({
+            head: [columnas],
+            body: filas,
+            startY: 50
+        });
+
+        doc.save('informe_inventario.pdf');
+    });
+</script>
+
+{% endblock %}

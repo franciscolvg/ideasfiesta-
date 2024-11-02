@@ -1,0 +1,105 @@
+{% extends 'core/base.html' %}
+{% load static %}
+
+{% block content %}
+<h1 class="mb-4" style="background-color:rgb(248, 249, 250); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); color: rgb(0, 0, 0); border-radius: 15px;">Catálogo de Artículos</h1>
+
+<div class="row">
+    <div class="col-md-9 offset-md-3">
+        <form method="get" action="{% url 'catalogo' %}">
+            <div class="input-group">
+                <input type="text" class="form-control" placeholder="Buscar artículos..." name="search" value="{{ request.GET.search }}">
+                <button class="btn btn-outline-secondary" type="submit"style="background-color:white; backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); color: black ; border-radius: 15px;">Buscar</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-md-3" style="background-color:rgb(255, 255, 255); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); color: rgb(0, 0, 0); border-radius: 15px;">
+        <h3>Categorías</h3>
+        <ul class="list-group">
+            <li class="list-group-item {% if categoria_actual is None %}active{% endif %}">
+                <a href="{% url 'catalogo' %}" class="text-decoration-none {% if categoria_actual is None %}text-white{% endif %}">
+                    Todas
+                </a>
+            </li>
+            {% for categoria in categorias %}
+                <li class="list-group-item {% if categoria_actual == categoria.id %}active{% endif %}">
+                    <a href="?categoria={{ categoria.id }}" class="text-decoration-none {% if categoria_actual == categoria.id %}text-white{% endif %}">
+                        {{ categoria.nombre }} 
+                    </a>
+                </li>
+            {% endfor %}
+        </ul>
+    </div>
+
+    <div class="col-md-9" style="background-color:rgb(248, 248, 249); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); color: white; border-radius: 15px;">
+        <div class="row">
+            {% for articulo in articulos %}
+                <div class="col-md-4 mb-4">
+                    <div class="card">
+                        <img src="{{ articulo.imagen.url }}" class="card-img-top" alt="{{ articulo.nombre }}">
+                        <div class="card-body">
+                            <h5 class="card-title">{{ articulo.nombre }}</h5>
+                            <p class="card-text">{{ articulo.descripcion|truncatewords:20 }}</p>
+                            <p class="card-text"><strong>Precio: ${{ articulo.precio }}</strong></p>
+                            <div class="input-group mb-3">
+                                <button class="btn btn-outline-secondary disminuir-cantidad" type="button" data-id="{{ articulo.id }}">-</button>
+                                <input type="number" class="form-control text-center cantidad-articulo" value="1" data-id="{{ articulo.id }}">
+                                <button class="btn btn-outline-secondary aumentar-cantidad" type="button" data-id="{{ articulo.id }}">+</button>
+                            </div>
+                            <button class="btn btn-primary agregar-al-carrito" data-url="{% url 'agregar_al_carrito' articulo.id %}" data-id="{{ articulo.id }}">
+                                Agregar al Carrito
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            {% empty %}
+                <p>No hay artículos disponibles en esta categoría.</p>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    $(document).ready(function() {
+        // Aumentar y disminuir la cantidad en el catálogo
+        $(document).on('click', '.aumentar-cantidad, .disminuir-cantidad', function() {
+            var input = $(this).siblings('.cantidad-articulo');
+            var nuevaCantidad = parseInt(input.val()) + ($(this).hasClass('aumentar-cantidad') ? 1 : -1);
+            input.val(Math.max(1, nuevaCantidad)); // Asegura que la cantidad no baje de 1
+        });
+
+        // Agregar la cantidad seleccionada al carrito
+        $(document).on('click', '.agregar-al-carrito', function() {
+            var articuloId = $(this).data('id');
+            var url = $(this).data('url');
+            var cantidad = parseInt($('input.cantidad-articulo[data-id="' + articuloId + '"]').val());
+
+            $.ajax({
+                url: url,
+                type: 'POST',
+                data: {
+                    'cantidad': cantidad,
+                    'csrfmiddlewaretoken': '{{ csrf_token }}'
+                },
+                success: function(response) {
+                    if (response.success) {
+                        actualizarCarritoLateral(); // Actualizar el carrito lateral sin mostrar alert
+                    } else {
+                        alert('Error al agregar el artículo al carrito.');
+                    }
+                },
+                error: function() {
+                    alert('Error al agregar el artículo al carrito.');
+                }
+            });
+        });
+    });
+</script>
+
+{% endblock %}
+

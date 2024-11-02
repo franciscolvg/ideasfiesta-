@@ -1,0 +1,139 @@
+{% extends 'core/base.html' %}
+{% load crispy_forms_tags %}
+{% load static %}
+
+{% block content %}
+<h2>{% if articulo %}Editar Artículo{% else %}Agregar Artículo{% endif %}</h2>
+
+<form method="post" enctype="multipart/form-data" id="articuloForm">
+    {% csrf_token %}
+    
+    <!-- Campo Nombre -->
+    <div class="form-group">
+        <label for="{{ form.nombre.id_for_label }}">{{ form.nombre.label }}</label>
+        {{ form.nombre }}
+        {% if form.nombre.help_text %}
+            <small class="form-text text-muted">{{ form.nombre.help_text }}</small>
+        {% endif %}
+        {% for error in form.nombre.errors %}
+            <div class="invalid-feedback d-block">{{ error }}</div>
+        {% endfor %}
+    </div>
+
+    <!-- Campo Código -->
+    <div class="form-group">
+        <label for="{{ form.codigo.id_for_label }}">{{ form.codigo.label }}</label>
+        {{ form.codigo }}
+        {% if form.codigo.help_text %}
+            <small class="form-text text-muted">{{ form.codigo.help_text }}</small>
+        {% endif %}
+        {% for error in form.codigo.errors %}
+            <div class="invalid-feedback d-block">{{ error }}</div>
+        {% endfor %}
+    </div>
+
+    <!-- Campo Descripción -->
+    <div class="form-group">
+        <label for="{{ form.descripcion.id_for_label }}">{{ form.descripcion.label }}</label>
+        {{ form.descripcion }}
+        {% if form.descripcion.help_text %}
+            <small class="form-text text-muted">{{ form.descripcion.help_text }}</small>
+        {% endif %}
+        {% for error in form.descripcion.errors %}
+            <div class="invalid-feedback d-block">{{ error }}</div>
+        {% endfor %}
+    </div>
+
+    <!-- Campo Categoría -->
+    <div class="form-group">
+        <label for="{{ form.categoria.id_for_label }}">{{ form.categoria.label }}</label>
+        {{ form.categoria }}
+        {% if form.categoria.help_text %}
+            <small class="form-text text-muted">{{ form.categoria.help_text }}</small>
+        {% endif %}
+        {% for error in form.categoria.errors %}
+            <div class="invalid-feedback d-block">{{ error }}</div>
+        {% endfor %}
+    </div>
+
+    <!-- Campo Nueva Categoría -->
+    <div class="form-group">
+        <label for="nueva_categoria">Nueva Categoría</label>
+        <input type="text" id="nueva_categoria" name="nueva_categoria" class="form-control" style="width: 50%;">
+        <small class="form-text text-muted">Escribe una nueva categoría si no encuentras la que buscas.</small>
+    </div>
+
+    <!-- Campo Cantidad -->
+    <div class="form-group">
+        <label for="{{ form.cantidad.id_for_label }}">{{ form.cantidad.label }}</label>
+        {{ form.cantidad }}
+        {% if form.cantidad.help_text %}
+            <small class="form-text text-muted">{{ form.cantidad.help_text }}</small>
+        {% endif %}
+        {% for error in form.cantidad.errors %}
+            <div class="invalid-feedback d-block">{{ error }}</div>
+        {% endfor %}
+    </div>
+
+    <!-- Campo Precio -->
+    <div class="form-group">
+        <label for="{{ form.precio.id_for_label }}">{{ form.precio.label }}</label>
+        {{ form.precio }}
+        {% if form.precio.help_text %}
+            <small class="form-text text-muted">{{ form.precio.help_text }}</small>
+        {% endif %}
+        {% for error in form.precio.errors %}
+            <div class="invalid-feedback d-block">{{ error }}</div>
+        {% endfor %}
+    </div>
+
+    <!-- Campo Imagen -->
+    <div class="form-group">
+        <label for="{{ form.imagen.id_for_label }}">{{ form.imagen.label }}</label>
+        {{ form.imagen }}
+        {% if form.imagen.help_text %}
+            <small class="form-text text-muted">{{ form.imagen.help_text }}</small>
+        {% endif %}
+        {% for error in form.imagen.errors %}
+            <div class="invalid-feedback d-block">{{ error }}</div>
+        {% endfor %}
+    </div>
+
+    <!-- Vista previa de la imagen -->
+    <div class="form-group">
+        <label for="id_imagen">Vista previa de la imagen</label><br>
+        <img id="image-preview" src="{% if articulo and articulo.imagen %}{{ articulo.imagen.url }}{% else %}{% static 'core/img/no-image.png' %}{% endif %}" alt="Vista previa de la imagen" style="max-width: 200px; max-height: 200px; object-fit: cover;">
+    </div>
+
+    <!-- Botones de acción -->
+    <div class="d-flex">
+        <button type="submit" class="btn btn-primary">Guardar Cambios</button>
+        <a href="{% url 'admin_inventario' %}" class="btn btn-secondary ml-2">Cancelar</a>
+        {% if articulo %}
+            <button type="button" class="btn btn-danger ml-2" id="deleteArticuloBtn">Eliminar Artículo</button>
+        {% endif %}
+    </div>
+</form>
+
+<!-- Script para la vista previa de la imagen -->
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script>
+$(document).ready(function() {
+    // Vista previa de la imagen al seleccionar una nueva
+    $('#id_imagen').on('change', function(event) {
+        var reader = new FileReader();
+        reader.onload = function(e) {
+            $('#image-preview').attr('src', e.target.result); // Cambia la imagen de vista previa
+        }
+        reader.readAsDataURL(event.target.files[0]); // Lee el archivo de la imagen seleccionada
+    });
+
+    // Confirmación y redirección para eliminar el artículo
+    $('#deleteArticuloBtn').on('click', function() {
+        if (confirm('¿Estás seguro de que deseas eliminar este artículo?')) {
+            window.location.href = "{% url 'eliminar_articulo' articulo.id %}";
+        }
+    });
+});
+</script>
+{% endblock %}

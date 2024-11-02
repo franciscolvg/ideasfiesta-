@@ -1,0 +1,158 @@
+{% extends 'core/base.html' %}
+{% load crispy_forms_tags %}
+{% load static %}
+{% block title %}Editar Solicitud - Evento Solicitud{% endblock %}
+{% block content %}
+
+<h1 class="mb-4">Editar Solicitud</h1>
+
+<div class="row">
+    <!-- Columna izquierda: Datos del cliente -->
+    <div class="col-md-6">
+        <h2>Datos del Cliente</h2>
+        <form method="post" id="solicitud-form">
+            {% csrf_token %}
+            {{ form|crispy }}
+            <button type="submit" class="btn btn-primary">Guardar Cambios</button>
+            <a href="{% url 'admin_solicitudes' %}" class="btn btn-secondary">Cancelar</a>
+        </form>
+    </div>
+
+    <!-- Columna derecha: Artículos -->
+    <div class="col-md-6">
+        <h2>Artículos de la Solicitud</h2>
+        <table class="table" id="articulos-table">
+            <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>Imagen</th>
+                    <th>Nombre</th>
+                    <th>Precio</th>
+                    <th>Cantidad</th>
+                    <th>Categoría</th>
+                    <th>Acciones</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for articulo_solicitud in articulos_solicitud %}
+                <tr data-id="{{ articulo_solicitud.id }}">
+                    <td>{{ articulo_solicitud.articulo.id }}</td>
+                    <td>
+                        {% if articulo_solicitud.articulo.imagen %}
+                            <img src="{{ articulo_solicitud.articulo.imagen.url }}" alt="{{ articulo_solicitud.articulo.nombre }}" style="width: 50px; height: 50px; object-fit: cover;">
+                        {% else %}
+                            <img src="{% static 'core/img/no-image.png' %}" alt="No image" style="width: 50px; height: 50px; object-fit: cover;">
+                        {% endif %}
+                    </td>
+                    
+                    <td>{{ articulo_solicitud.articulo.nombre }}</td>
+                    <td>
+                        <input type="number" name="precio_{{ articulo_solicitud.id }}" value="{{ articulo_solicitud.articulo.precio }}" class="form-control precio-input" step="0.01" min="0">
+                    </td>
+                    <td>
+                        <input type="number" name="cantidad_{{ articulo_solicitud.id }}" value="{{ articulo_solicitud.cantidad }}" class="form-control cantidad-input" min="1">
+                    </td>
+                    <td>{{ articulo_solicitud.articulo.categoria }}</td>
+                    <td>
+                        <button class="btn btn-danger btn-sm eliminar-articulo">Eliminar</button>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+
+        <h3>Añadir Artículo</h3>
+        <select id="articulo-select" class="form-control">
+            <option value="">Seleccione un artículo</option>
+            {% for articulo in articulos_disponibles %}
+                <option value="{{ articulo.id }}">{{ articulo.nombre }}</option>
+            {% endfor %}
+        </select>
+        <button id="add-articulo" class="btn btn-success mt-2">Añadir Artículo</button>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    $(document).ready(function() {
+        // Función para actualizar un artículo
+        function actualizarArticulo(id, precio, cantidad) {
+            $.ajax({
+                url: '{% url "actualizar_articulo_solicitud" %}',
+                type: 'POST',
+                data: {
+                    'articulo_solicitud_id': id,
+                    'precio': precio,
+                    'cantidad': cantidad,
+                    'csrfmiddlewaretoken': '{{ csrf_token }}'
+                },
+                success: function(response) {
+                    if (response.success) {
+                        alert('Artículo actualizado con éxito');
+                    } else {
+                        alert('Error al actualizar el artículo');
+                    }
+                }
+            });
+        }
+
+        // Evento para actualizar precio y cantidad
+        $('.precio-input, .cantidad-input').change(function() {
+            var row = $(this).closest('tr');
+            var id = row.data('id');
+            var precio = row.find('.precio-input').val();
+            var cantidad = row.find('.cantidad-input').val();
+            actualizarArticulo(id, precio, cantidad);
+        });
+
+        // Evento para eliminar un artículo
+        $('.eliminar-articulo').click(function() {
+            var row = $(this).closest('tr');
+            var id = row.data('id');
+            if (confirm('¿Está seguro de que desea eliminar este artículo?')) {
+                $.ajax({
+                    url: '{% url "eliminar_articulo_solicitud" %}',
+                    type: 'POST',
+                    data: {
+                        'articulo_solicitud_id': id,
+                        'csrfmiddlewaretoken': '{{ csrf_token }}'
+                    },
+                    success: function(response) {
+                        if (response.success) {
+                            row.remove();
+                            alert('Artículo eliminado con éxito');
+                        } else {
+                            alert('Error al eliminar el artículo');
+                        }
+                    }
+                });
+            }
+        });
+
+        // Evento para añadir un nuevo artículo
+        $('#add-articulo').click(function() {
+            var articuloId = $('#articulo-select').val();
+            if (articuloId) {
+                $.ajax({
+                    url: '{% url "agregar_articulo_solicitud" %}',
+                    type: 'POST',
+                    data: {
+                        'solicitud_id': '{{ solicitud.id }}',
+                        'articulo_id': articuloId,
+                        'csrfmiddlewaretoken': '{{ csrf_token }}'
+                    },
+                    success: function(response) {
+                        if (response.success) {
+                            location.reload(); // Recargar la página para mostrar el nuevo artículo
+                        } else {
+                            alert('Error al añadir el artículo');
+                        }
+                    }
+                });
+            }
+        });
+    });
+</script>
+{% endblock %}

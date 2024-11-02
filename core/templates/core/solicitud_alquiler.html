@@ -1,0 +1,19 @@
+{% extends 'core/base.html' %}
+{% load crispy_forms_tags %}
+
+{% block title %}Solicitud de Alquiler - Evento Solicitud{% endblock %}
+
+{% block content %}
+<h1 class="mb-4">Solicitud de Alquiler</h1>
+<form method="post">
+    {% csrf_token %}
+    {{ form|crispy }}
+    <h3 class="mt-4">Artículos Seleccionados</h3>
+    <ul>
+        {% for articulo in articulos %}
+            <li>{{ articulo.nombre }} - Cantidad: {{ carrito|get_item:articulo.id }}</li>
+        {% endfor %}
+    </ul>
+    <button type="submit" class="btn btn-primary mt-3">Enviar Solicitud</button>
+</form>
+{% endblock %}

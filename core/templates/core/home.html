@@ -1,0 +1,87 @@
+{% extends 'core/base.html' %}
+{% load static %}
+
+{% block title %}Inicio - ideas fiestas{% endblock %}
+
+{% block content %}
+<!-- Hero Section con imagen de fondo -->
+<!-- Hero Section con fondo blanco y texto negro -->
+<div class="jumbotron text-white" style="background-color: rgb(253, 253, 253); border-radius: 15px;">
+    <h1 class="display-4" style="color: rgb(3, 8, 87);">Bienvenido a Ideas Fiestas Y Soluciones</h1>
+    <p class="lead" style="color: rgb(0, 7, 132);">Nuestra pasión es llevar a cabo la organización de su evento de la forma más profesional.</p>
+    <a class="btn btn-primary btn-lg mt-4" href="{% url 'catalogo' %}" role="button">Ver Catálogo</a>
+</div>
+
+<!-- Sección de imagenes Destacadas -->
+<section class="container mt-5-1" style="background-color:rgb(247, 248, 249); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); color: rgb(8, 8, 8); border-radius: 15px;" >
+    <h2 class="text-center mb-4">Momentos Destacados de Nuestras Fiestas</h2>
+    
+    <!-- Carrusel de Bootstrap -->
+    <div id="fiestasCarousel" class="carousel slide" data-bs-ride="carousel" data-bs-interval="3000"> <!-- Cambia automáticamente cada 3 segundos -->
+        <div class="carousel-inner">
+            <!-- Primera imagen del carrusel -->
+            <div class="carousel-item active">
+                <img src="{% static 'imagenesplantilla/fiesta1.jpg' %}" class="d-block w-100" alt="Fiesta 1" style="height: 500px; object-fit: cover;">
+            </div>
+            
+            <!-- Segunda imagen del carrusel -->
+            <div class="carousel-item">
+                <img src="{% static 'imagenesplantilla/fiesta2.jpg' %}" class="d-block w-100" alt="Fiesta 2" style="height: 500px; object-fit: cover;">
+            </div>
+            
+            <!-- Tercera imagen del carrusel -->
+            <div class="carousel-item">
+                <img src="{% static 'imagenesplantilla/fiesta3.jpg' %}" class="d-block w-100" alt="Fiesta 3" style="height: 500px; object-fit: cover;">
+            </div>
+        </div>
+
+        <!-- Controles del carrusel -->
+        <a class="carousel-control-prev" href="#fiestasCarousel" role="button" data-bs-slide="prev">
+            <span class="carousel-control-prev-icon" aria-hidden="true"></span>
+            <span class="visually-hidden">Previous</span>
+        </a>
+        <a class="carousel-control-next" href="#fiestasCarousel" role="button" data-bs-slide="next">
+            <span class="carousel-control-next-icon" aria-hidden="true"></span>
+            <span class="visually-hidden">Next</span>
+        </a>
+    </div>
+</section>
+
+<!-- Sección de Artículos Destacados -->
+<section class="container mt-5" style="background-color:rgb(255, 255, 255); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); color: rgb(17, 17, 17); border-radius: 15px;" >
+    <h2 class="text-center mb-4" >Artículos Destacados</h2>
+    <div class="row">
+        {% for articulo in articulos_destacados %}
+        <div class="col-md-4 mb-4">
+            <div class="card shadow-sm">
+                <img src="{{ articulo.imagen.url }}" class="card-img-top" alt="{{ articulo.nombre }}" style="height: 200px; object-fit: cover;">
+                <div class="card-body">
+                    <h5 class="card-title">{{ articulo.nombre }}</h5>
+                    <p class="card-text">Precio: ${{ articulo.precio }}</p>
+                    <a href="{% url 'catalogo' %}" class="btn btn-outline-primary btn-block">Ver más</a>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+</section>
+
+<!-- Sección de Contacto -->
+<section class="bg-light py-5" style="border-radius: 15px;">
+    <div class="container">
+        <div class="row">
+            <div class="col-md-4 text-center">
+                <i class="fas fa-phone fa-3x text-primary mb-3"></i>
+                <h4>Contáctanos</h4>
+                <p>Teléfonos: <a href="tel:+8094739021">809-473-9021</a>, <a href="tel:+8095615223">809-561-5223</a></p>
+                <p>Email: <a href="mailto:ideasfiestassoluciones@gmail.com">ideasfiestassoluciones@gmail.com</a></p>
+                <a href="{% url 'contacto' %}" class="btn btn-secondary mt-2">Escríbenos</a>
+            </div>
+            <div class="col-md-8">
+                <h4>Eventos Recientes</h4>
+                <p>Galería de eventos: próximamente...</p>
+            </div>
+        </div>
+    </div>
+</section>
+{% endblock %}

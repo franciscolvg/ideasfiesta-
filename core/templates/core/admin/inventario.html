@@ -1,0 +1,108 @@
+{% extends 'core/base.html' %}
+{% load static %}
+
+{% block content %}
+<h2>Inventario</h2>
+
+<!-- Botón para ir al panel en la parte superior derecha -->
+<div class="d-flex justify-content-end mb-3">
+    <a href="{% url 'admin_panel' %}" class="btn btn-secondary">Ir al Panel de Administración</a>
+</div>
+
+<div class="mb-3">
+    <a href="{% url 'agregar_articulo' %}" class="btn btn-primary">Agregar Artículo</a>
+    <a href="{% url 'informe_inventario' %}" class="btn btn-info">Informe de Inventario</a>
+    <button id="exportBtn" class="btn btn-success">Descargar Excel</button> <!-- Botón de descarga -->
+</div>
+
+<div class="mb-3">
+    <input type="text" id="searchInput" class="form-control mb-2" placeholder="Buscar por ID o nombre...">
+    <select id="categoryFilter" class="form-control">
+        <option value="">Todas las categorías</option>
+        {% for categoria in categorias %}
+        <option value="{{ categoria.nombre }}">{{ categoria.nombre }}</option>
+        {% endfor %}
+    </select>
+</div>
+
+<table class="table" id="inventoryTable" style="background-color: rgb(253, 253, 253); border-radius: 15px;">
+    <thead>
+        <tr>
+            <th>ID</th>
+            <th>Imagen</th>
+            <th>Código</th> <!-- Nueva columna para el código -->
+            <th>Nombre</th>
+            <th>Precio</th>
+            <th>Cantidad</th>
+            <th>Categoría</th>
+            <th>Acciones</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for articulo in articulos %}
+        <tr>
+            <td>{{ articulo.id }}</td>
+            <td>
+                {% if articulo.imagen %}
+                    <img src="{{ articulo.imagen.url }}" alt="{{ articulo.nombre }}" style="width: 50px; height: 50px; object-fit: cover;">
+                {% else %}
+                    <img src="{% static 'core/img/no-image.png' %}" alt="No imagen" style="width: 50px; height: 50px; object-fit: cover;">
+                {% endif %}
+            </td>
+            <td>{{ articulo.codigo }}</td> <!-- Mostrar el código -->
+            <td>{{ articulo.nombre }}</td>
+            <td>${{ articulo.precio }}</td>
+            <td>{{ articulo.cantidad }}</td>
+            <td>{{ articulo.categoria.nombre }}</td>
+            <td>
+                <a href="{% url 'editar_articulo' articulo.id %}" class="btn btn-sm btn-primary">Editar</a>
+            </td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+
+<!-- Agregar el script de SheetJS para la descarga -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const searchInput = document.getElementById('searchInput');
+    const categoryFilter = document.getElementById('categoryFilter');
+    const table = document.getElementById('inventoryTable');
+    const rows = table.getElementsByTagName('tr');
+
+    function filterTable() {
+        const searchTerm = searchInput.value.toLowerCase();
+        const category = categoryFilter.value.toLowerCase();
+
+        for (let i = 1; i < rows.length; i++) {
+            const row = rows[i];
+            const id = row.cells[0].textContent.toLowerCase();
+            const codigo = row.cells[2].textContent.toLowerCase();  // Añadimos el campo de código
+            const name = row.cells[3].textContent.toLowerCase();
+            const rowCategory = row.cells[6].textContent.toLowerCase();  // Ajustamos el índice de categoría
+
+            const matchesSearch = id.includes(searchTerm) || codigo.includes(searchTerm) || name.includes(searchTerm);  // Buscar también por código
+            const matchesCategory = category === '' || rowCategory === category;
+
+            if (matchesSearch && matchesCategory) {
+                row.style.display = '';
+            } else {
+                row.style.display = 'none';
+            }
+        }
+    }
+
+    searchInput.addEventListener('input', filterTable);
+    categoryFilter.addEventListener('change', filterTable);
+
+    // Función para exportar a Excel
+    document.getElementById('exportBtn').addEventListener('click', function() {
+        var table = document.getElementById('inventoryTable');
+        var wb = XLSX.utils.table_to_book(table, {sheet: "Inventario"});
+        XLSX.writeFile(wb, "inventario.xlsx");
+    });
+});
+</script>
+{% endblock %}

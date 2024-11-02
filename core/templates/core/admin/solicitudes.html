@@ -1,0 +1,123 @@
+{% extends 'core/base.html' %}
+{% load custom_filters %}
+{% block content %}
+<div class="d-flex justify-content-between align-items-center" style="background-color: rgb(253, 253, 253); border-radius: 15px;">
+    <h1 style="background-color: rgb(253, 253, 253); border-radius: 15px;">Gestión de Solicitudes</h1>
+    <!-- Botón para ir al panel -->
+    <a href="{% url 'admin_panel' %}" class="btn btn-secondary">Ir al Panel de Administración</a>
+</div>
+
+<ul class="nav nav-tabs" id="solicitudesTabs" role="tablist"style="background-color: rgb(253, 253, 253); border-radius: 15px;">
+    {% for estado, nombre in estados.items %}
+    <li class="nav-item">
+        <a class="nav-link {% if forloop.first %}active{% endif %}" id="{{ estado }}-tab" data-toggle="tab" href="#{{ estado }}" role="tab">
+            {{ nombre }} ({{ solicitudes_por_estado|get_item:estado|length }})
+        </a>
+    </li>
+    {% endfor %}
+</ul>
+
+<div class="tab-content" id="solicitudesTabContent"style="background-color: rgb(253, 253, 253); border-radius: 15px;">
+    {% for estado, nombre in estados.items %}
+    <div class="tab-pane fade {% if forloop.first %}show active{% endif %}" id="{{ estado }}" role="tabpanel">
+        <table class="table">
+            <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>Cliente</th>
+                    <th>Fecha de Inicio</th>
+                    <th>Acciones</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% with solicitudes=solicitudes_por_estado|get_item:estado %}
+                {% for solicitud in solicitudes %}
+                <tr>
+                    <td>{{ solicitud.id }}</td>
+                    <td>{{ solicitud.nombre }} {{ solicitud.apellido }}</td>
+                    <td>{{ solicitud.fecha_inicio }}</td>
+                    <td>
+                        <a href="{% url 'admin_editar_solicitud' solicitud.id %}" class="btn btn-sm btn-primary">Editar</a>
+                        <a href="{% url 'detalle_solicitud' solicitud.id %}" class="btn btn-sm btn-info">Ver Detalles</a>
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="4">No hay solicitudes en este estado.</td>
+                </tr>
+                {% endfor %}
+                {% endwith %}
+            </tbody>
+        </table>
+    </div>
+    {% endfor %}
+</div>
+
+<!-- Botones adicionales -->
+<div class="d-flex justify-content-start mb-4">
+    <a href="{% url 'crear_solicitud' %}" class="btn btn-success mr-2">Crear Nueva Solicitud</a>
+    <a href="{% url 'informe_solicitudes' %}" class="btn btn-info mr-2">Ver Informe</a>
+    <button id="exportPdf" class="btn btn-danger">Descargar PDF</button>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.18/jspdf.plugin.autotable.min.js"></script>
+
+<script>
+$(document).ready(function() {
+    // Esto es para manejar el cambio de pestañas
+    $('#solicitudesTabs a').on('click', function (e) {
+        e.preventDefault();
+        $(this).tab('show');
+    });
+
+
+        // Función para exportar a PDF con formato de tabla
+   document.getElementById('exportPdf').addEventListener('click', function() {
+    var { jsPDF } = window.jspdf;
+    var doc = new jsPDF();
+    let yPosition = 20;  // Posición inicial en Y para el primer título
+
+    {% for estado, nombre in estados.items %}
+    // Añadir el nombre de la tabla
+    doc.setFontSize(16);
+    doc.text("Solicitudes - {{ nombre }}", 10, yPosition); // Añadir el nombre de la tabla en la posición actual
+
+    // Aumentar la posición Y para que haya espacio entre el título y la tabla
+    yPosition += 10;
+
+    // Configurar las columnas de la tabla
+    var columnas = ["ID", "Cliente", "Fecha de Inicio"];
+    var filas = [
+        {% with solicitudes=solicitudes_por_estado|get_item:estado %}
+        {% for solicitud in solicitudes %}
+        ["{{ solicitud.id }}", "{{ solicitud.nombre }} {{ solicitud.apellido }}", "{{ solicitud.fecha_inicio|date:'M d, Y' }}"],
+        {% endfor %}
+        {% endwith %}
+    ];
+
+    // Generar la tabla después del título
+    doc.autoTable({
+        head: [columnas],
+        body: filas,
+        startY: yPosition, // La tabla empieza justo debajo del título
+        margin: { top: 10 }, // Margen superior para que las tablas no se solapen
+        theme: 'grid'
+    });
+
+    // Actualizar la posición Y después de generar la tabla
+    yPosition = doc.lastAutoTable.finalY + 20; // Aumentamos 20px después de la tabla para dejar espacio para el próximo título
+
+    {% endfor %}
+
+    doc.save('solicitudes.pdf');
+});
+
+
+
+    });
+</script>
+{% endblock %}

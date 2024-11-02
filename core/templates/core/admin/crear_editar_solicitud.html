@@ -1,0 +1,202 @@
+{% extends 'core/base.html' %}
+{% load crispy_forms_tags %}
+{% load static %}
+
+{% block content %}
+<h2>{% if solicitud %}Editar{% else %}Crear{% endif %} Solicitud</h2>
+
+<form method="post">
+    {% csrf_token %}
+    <div class="row">
+        <div class="col-md-6">
+            <h3>Datos de la Solicitud</h3>
+            <div style="max-height: 500px; overflow-y: scroll;">
+                {{ solicitud_form|crispy }}
+            </div>
+        </div>
+
+        <div class="col-md-6">
+            <h3>Artículos de la Solicitud</h3>
+            {{ articulo_formset.management_form }}  <!-- Necesario para que el formset funcione correctamente -->
+
+            <!-- Scroll para los artículos -->
+            <div class="formset-row" style="max-height: 500px; overflow-y: scroll;">
+                {% for form in articulo_formset %}
+                <div class="row mb-3">
+                    <div class="d-flex justify-content-start align-items-start w-100" style="border-bottom: 1px solid #ccc; padding-bottom: 10px;">
+                        
+                        <!-- Campo oculto para manejar el ID -->
+                        {{ form.id }}
+
+                        <div>
+                            {% if form.instance.articulo.imagen %}
+                            <img src="{{ form.instance.articulo.imagen.url }}" alt="{{ form.instance.articulo.nombre }}" style="width: 80px; height: 80px; object-fit: cover;">
+                            {% else %}
+                            <img src="{% static 'core/img/no-image.png' %}" alt="No image" style="width: 80px; height: 80px; object-fit: cover;">
+                            {% endif %}
+                        </div>
+                        
+                        <!-- Mostrar errores específicos de cada formulario en el formset -->
+                        {% if form.errors %}
+                        <div class="alert alert-danger">
+                            <ul>
+                                {% for field, errors in form.errors.items %}
+                                <li><strong>{{ field }}:</strong> {{ errors|join:", " }}</li>
+                                {% endfor %}
+                            </ul>
+                        </div>
+                        {% endif %}
+                        
+                        <div class="ml-3" style="flex-grow: 1;">
+                            <p><strong>ID:</strong> {{ form.instance.articulo.id }}</p>
+                            <p><strong>Nombre:</strong> {{ form.instance.articulo.nombre }}</p>
+                            <p><strong>Categoría:</strong> {{ form.instance.articulo.categoria.nombre }}</p>
+                            <p><strong>Código:</strong> {{ form.instance.articulo.codigo }}</p> <!-- Campo de código añadido -->
+
+                            <!-- Campos artículo -->
+                            <div class="d-flex mb-2">
+                                <p><strong></strong></p>
+                                {{ form.articulo|as_crispy_field }}
+
+                                <!-- Campos de cantidad-->
+                                <p><strong></strong></p>
+                                {{ form.cantidad|as_crispy_field }}
+
+                                <p><strong>Precio:</strong> {{ form.instance.articulo.precio }}</p>
+                            </div>
+
+                            <!-- Checkbox de eliminación -->
+                            {% if form.instance.pk %}
+                            <div class="form-check">
+                                {{ form.DELETE|as_crispy_field }}
+                            </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+
+            <h4>Añadir un nuevo artículo</h4>
+            <div class="form-group">
+                <label for="articulo-input">Escriba o seleccione un artículo:</label>
+                <input list="articulos-disponibles" id="articulo-input" class="form-control" placeholder="Escriba o seleccione un artículo">
+                <datalist id="articulos-disponibles">
+                    {% for articulo in articulos_disponibles %}
+                        <option value="{{ articulo.nombre }}" data-id="{{ articulo.id }}" data-img-url="{% if articulo.imagen %}{{ articulo.imagen.url }}{% else %}{% static 'core/img/no-image.png' %}{% endif %}">
+                    {% endfor %}
+                </datalist>
+            </div>
+            
+            <div id="articulo-image-preview" style="margin-top: 20px;">
+                <img src="{% static 'core/img/no-image.png' %}" alt="Vista previa del artículo" style="width: 150px; height: 150px; object-fit: cover;">
+            </div>
+            
+            <button id="add-articulo" type="button" class="btn btn-success mt-2">Añadir Artículo</button>
+            
+        </div>
+    </div>
+
+    <button type="submit" class="btn btn-primary">Guardar Cambios</button>
+    <a href="{% url 'admin_solicitudes' %}" class="btn btn-secondary">Cancelar</a>
+</form>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+ $(document).ready(function() {
+    var formCount = parseInt($('#id_form-TOTAL_FORMS').val());
+
+    // Evento para actualizar la imagen cuando se selecciona o escribe un artículo
+    $('#articulo-input').on('input', function() {
+        var articuloNombre = $(this).val();
+        var selectedOption = $('#articulos-disponibles option').filter(function() {
+            return this.value === articuloNombre;
+        });
+
+        // Obtener la URL de la imagen del artículo
+        var imageUrl = selectedOption.data('img-url') || "{% static 'core/img/no-image.png' %}";
+        $('#articulo-image-preview img').attr('src', imageUrl); // Actualizar la imagen en el contenedor
+    });
+
+    // Función para verificar si el artículo ya está en la lista
+    function articuloYaEnLista(articuloId) {
+        var articuloYaAgregado = false;
+
+        // Recorremos los formularios ya presentes
+        $('select[name$="-articulo"]').each(function() {
+            if ($(this).val() == articuloId) {
+                articuloYaAgregado = true;
+                return false; // Salir del bucle si encontramos el artículo
+            }
+        });
+
+        return articuloYaAgregado;
+    }
+
+    // Actualizar el datalist para que solo muestre los artículos no añadidos
+    function actualizarDatalist() {
+        var articulosAgregados = [];
+
+        // Obtener los artículos que ya están en la lista
+        $('select[name$="-articulo"]').each(function() {
+            articulosAgregados.push($(this).val());
+        });
+
+        $('#articulos-disponibles option').each(function() {
+            var articuloId = $(this).data('id');
+            if (articulosAgregados.includes(articuloId.toString())) {
+                $(this).hide(); // Ocultar si ya está en la lista
+            } else {
+                $(this).show(); // Mostrar si no está
+            }
+        });
+    }
+
+    // Llamar a la función al cargar la página
+    actualizarDatalist();
+
+    // Evento para añadir el artículo a la lista
+    $('#add-articulo').click(function() {
+        var articuloNombre = $('#articulo-input').val();
+        var selectedOption = $('#articulos-disponibles option').filter(function() {
+            return this.value === articuloNombre;
+        });
+
+        var articuloId = selectedOption.data('id');
+
+        // Verificar si el artículo ya está en la lista
+        if (articuloYaEnLista(articuloId)) {
+            alert('Este artículo ya está en la lista.');
+            return;
+        }
+
+        if (articuloId) {
+            var newForm = $('.formset-row .row:first').clone(false); // Clonamos el primer formulario sin los datos
+
+            newForm.find('input, select').each(function() {
+                var name = $(this).attr('name').replace('-0-', '-' + formCount + '-');
+                var id = 'id_' + name;
+                $(this).attr({'name': name, 'id': id}).val('');  // Limpia los valores de entrada
+            });
+
+            newForm.find('select[name$="-articulo"]').val(articuloId);
+            newForm.find('input[name$="-cantidad"]').val(''); // Dejar vacío el campo de cantidad
+
+            $('.formset-row').append(newForm); // Agregar el nuevo formulario al final
+
+            formCount++;
+            $('#id_form-TOTAL_FORMS').val(formCount); // Actualizar el contador de formularios
+
+            // Actualizar el datalist después de agregar el nuevo artículo
+            actualizarDatalist();
+
+            // Guardar el formulario después de añadir el artículo
+            $('form').submit(); // Enviar el formulario para guardar los cambios
+        } else {
+            alert('Por favor, seleccione un artículo.');
+        }
+    });
+});
+</script>
+{% endblock %}

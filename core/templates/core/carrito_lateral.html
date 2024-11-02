@@ -1,0 +1,87 @@
+{% for articulo in articulos %}
+<div class="card mb-3">
+    <div class="row g-0">
+        <div class="col-md-4">
+            <img src="{{ articulo.imagen.url }}" class="img-fluid rounded-start" alt="{{ articulo.nombre }}">
+        </div>
+        <div class="col-md-8">
+            <div class="card-body">
+                <h5 class="card-title">{{ articulo.nombre }}</h5>
+                <p class="card-text">Precio: ${{ articulo.precio }}</p>
+                <div class="input-group mb-3">
+                    <button class="btn btn-outline-secondary disminuir-cantidad" type="button" data-id="{{ articulo.id }}">-</button>
+                    <input type="number" class="form-control text-center cantidad-articulo" value="{{ articulo.cantidad }}" data-id="{{ articulo.id }}" min="1">
+                    <button class="btn btn-outline-secondary aumentar-cantidad" type="button" data-id="{{ articulo.id }}">+</button>
+                </div>
+                <button class="btn btn-danger btn-sm eliminar-del-carrito" data-id="{{ articulo.id }}">Eliminar</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% empty %}
+<p>Tu carrito está vacío.</p>
+{% endfor %}
+
+<script>
+    $(document).ready(function() {
+        function actualizarCantidad(articuloId, nuevaCantidad) {
+            $.ajax({
+                url: '{% url "actualizar_cantidad_carrito" %}',
+                type: 'POST',
+                data: {
+                    'articulo_id': articuloId,
+                    'cantidad': nuevaCantidad,
+                    'csrfmiddlewaretoken': '{{ csrf_token }}'
+                },
+                success: function(response) {
+                    if (response.success) {
+                        // Actualizamos solo el valor de la cantidad sin duplicar
+                        $('input.cantidad-articulo[data-id="' + articuloId + '"]').val(response.nueva_cantidad);
+                    } else {
+                        alert('Error al actualizar la cantidad');
+                    }
+                },
+                error: function() {
+                    alert('Error al actualizar la cantidad');
+                }
+            });
+        }
+
+        $('.aumentar-cantidad, .disminuir-cantidad').on('click', function() {
+            var input = $(this).siblings('.cantidad-articulo');
+            var articuloId = input.data('id');
+            var nuevaCantidad = parseInt(input.val()) + ($(this).hasClass('aumentar-cantidad') ? 1 : -1);
+            nuevaCantidad = Math.max(1, nuevaCantidad);
+            actualizarCantidad(articuloId, nuevaCantidad);
+        });
+
+        $('.cantidad-articulo').on('change', function() {
+            var articuloId = $(this).data('id');
+            var nuevaCantidad = Math.max(1, parseInt($(this).val()));
+            actualizarCantidad(articuloId, nuevaCantidad);
+        });
+
+        $('.eliminar-del-carrito').on('click', function() {
+            var articuloId = $(this).data('id');
+            $.ajax({
+                url: '/quitar-del-carrito/' + articuloId + '/',
+                type: 'POST',
+                data: {
+                    'csrfmiddlewaretoken': '{{ csrf_token }}'
+                },
+                success: function(response) {
+                    if (response.success) {
+                        location.reload();
+                    } else {
+                        alert('Error al eliminar el artículo del carrito');
+                    }
+                },
+                error: function() {
+                    alert('Error al eliminar el artículo');
+                }
+            });
+        });
+    });
+</script>
+
+    

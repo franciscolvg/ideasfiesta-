@@ -1,0 +1,9 @@
+/* Estilos personalizados aquí */
+body {
+    font-family: Arial, sans-serif;
+}
+
+.card-img-top {
+    height: 200px;
+    object-fit: cover;
+}
